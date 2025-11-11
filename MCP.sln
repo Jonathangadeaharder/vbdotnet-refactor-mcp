@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCP.ValidationWorker", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCP.Plugins.RenameSymbol", "src\MCP.Plugins.RenameSymbol\MCP.Plugins.RenameSymbol.csproj", "{F6A7B8C9-DAE0-4F5A-D1C2-4D5E6F7A8B9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCP.Plugins.ExtractMethod", "src\MCP.Plugins.ExtractMethod\MCP.Plugins.ExtractMethod.csproj", "{A8B9C0DA-E1F2-4B5C-F3E4-6F7A8B9C0D1E}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCP.Tests", "tests\MCP.Tests\MCP.Tests.csproj", "{A7B8C9DA-E0F1-4A5B-E2D3-5E6F7A8B9C0D}"
 EndProject
 
@@ -49,6 +51,10 @@ Global
 		{F6A7B8C9-DAE0-4F5A-D1C2-4D5E6F7A8B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6A7B8C9-DAE0-4F5A-D1C2-4D5E6F7A8B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6A7B8C9-DAE0-4F5A-D1C2-4D5E6F7A8B9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8B9C0DA-E1F2-4B5C-F3E4-6F7A8B9C0D1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8B9C0DA-E1F2-4B5C-F3E4-6F7A8B9C0D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8B9C0DA-E1F2-4B5C-F3E4-6F7A8B9C0D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8B9C0DA-E1F2-4B5C-F3E4-6F7A8B9C0D1E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A7B8C9DA-E0F1-4A5B-E2D3-5E6F7A8B9C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A7B8C9DA-E0F1-4A5B-E2D3-5E6F7A8B9C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7B8C9DA-E0F1-4A5B-E2D3-5E6F7A8B9C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU

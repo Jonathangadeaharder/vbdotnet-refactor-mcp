@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\src\MCP.Core\MCP.Core.csproj" />
     <ProjectReference Include="..\..\src\MCP.Contracts\MCP.Contracts.csproj" />
     <ProjectReference Include="..\..\src\MCP.RefactoringWorker\MCP.RefactoringWorker.csproj" />
+    <ProjectReference Include="..\..\src\MCP.Plugins.RenameSymbol\MCP.Plugins.RenameSymbol.csproj" />
+    <ProjectReference Include="..\..\src\MCP.Plugins.ExtractMethod\MCP.Plugins.ExtractMethod.csproj" />
   </ItemGroup>
 
 </Project>
