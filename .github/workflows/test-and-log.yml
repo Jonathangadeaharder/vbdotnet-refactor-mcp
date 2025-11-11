@@ -1,0 +1,143 @@
+name: Test and Log Results
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+      - 'main'
+      - 'develop'
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-amend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MCP.sln
+
+      - name: Build solution
+        run: dotnet build MCP.sln --configuration Release --no-restore
+
+      - name: Run tests and capture output
+        id: test
+        continue-on-error: true
+        run: |
+          # Create log file with header
+          echo "=====================================================================" > test-execution.log
+          echo "MCP Test Execution Report" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "" >> test-execution.log
+          echo "Branch: ${{ github.ref_name }}" >> test-execution.log
+          echo "Commit: ${{ github.sha }}" >> test-execution.log
+          echo "Author: ${{ github.actor }}" >> test-execution.log
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> test-execution.log
+          echo "Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> test-execution.log
+          echo "" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "BUILD OUTPUT" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "" >> test-execution.log
+
+          # Run tests with detailed output
+          dotnet test tests/MCP.Tests/MCP.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity detailed \
+            --logger "console;verbosity=detailed" \
+            >> test-execution.log 2>&1
+
+          TEST_EXIT_CODE=$?
+
+          echo "" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "TEST SUMMARY" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "" >> test-execution.log
+
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "✅ All tests passed successfully" >> test-execution.log
+            echo "test_result=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests failed with exit code: $TEST_EXIT_CODE" >> test-execution.log
+            echo "test_result=failure" >> $GITHUB_OUTPUT
+          fi
+
+          echo "" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "ENVIRONMENT INFORMATION" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+          echo "" >> test-execution.log
+          echo ".NET SDK Version:" >> test-execution.log
+          dotnet --version >> test-execution.log
+          echo "" >> test-execution.log
+          echo ".NET Runtime Versions:" >> test-execution.log
+          dotnet --list-runtimes >> test-execution.log
+          echo "" >> test-execution.log
+          echo "=====================================================================" >> test-execution.log
+
+          exit $TEST_EXIT_CODE
+
+      - name: Display log preview
+        if: always()
+        run: |
+          echo "📄 Test execution log preview (first 50 lines):"
+          head -50 test-execution.log
+          echo ""
+          echo "📄 Test execution log preview (last 50 lines):"
+          tail -50 test-execution.log
+
+      - name: Configure Git
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Amend commit with test log
+        if: always()
+        run: |
+          # Add the log file to git
+          git add test-execution.log
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "⚠️ No changes to amend (log file already exists and unchanged)"
+            exit 0
+          fi
+
+          # Amend the commit with the log file
+          # Preserve the original commit message
+          git commit --amend --no-edit
+
+          echo "✅ Commit amended with test execution log"
+
+      - name: Force push amended commit
+        if: always()
+        run: |
+          # Force push the amended commit
+          git push --force-with-lease origin ${{ github.ref_name }}
+
+          echo "✅ Amended commit force-pushed to ${{ github.ref_name }}"
+
+      - name: Create status comment
+        if: always()
+        run: |
+          if [ "${{ steps.test.outputs.test_result }}" = "success" ]; then
+            echo "✅ Tests passed and results logged to test-execution.log"
+          else
+            echo "❌ Tests failed - check test-execution.log for details"
+            exit 1
+          fi
