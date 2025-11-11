@@ -9,12 +9,15 @@ The **Mass Code Platform (MCP)** is a distributed, service-oriented architecture
 - **Semantic-Preserving Transformations**: Uses Roslyn's compiler APIs to ensure refactorings maintain code behavior
 - **Distributed Architecture**: Service-oriented design with independent API Gateway, Refactoring Workers, and Validation Workers
 - **Extensible Plugin System**: Add new refactoring tools without redeploying the platform
+  - **2 Production Plugins**: RenameSymbol (using Roslyn Renamer API), ExtractMethod (custom code generation)
+  - **Comprehensive Plugin Guide**: Full documentation for creating custom plugins
 - **Three-Legged Safety Guarantee**:
   1. Pre-flight semantic validation using Roslyn
   2. Post-flight compilation verification
   3. Automated CI/CD test execution
 - **Asynchronous Job Processing**: Long-running refactorings execute in background workers with progress tracking
 - **Battle-Tested Components**: Leverages Microsoft's Roslyn, MSBuild, and Hangfire for reliability
+- **Production-Ready Testing**: 153 comprehensive tests including real VB.NET refactoring scenarios (~75% coverage)
 
 ---
 
@@ -72,9 +75,9 @@ This **Service-Oriented Architecture (SOA)** provides:
 ```
 vbdotnet-refactor-mcp/
 ├── src/
-│   ├── MCP.Contracts/              # Plugin interface definitions
+│   ├── MCP.Contracts/                  # Plugin interface definitions
 │   │   └── IRefactoringProvider.cs
-│   ├── MCP.Core/                    # Shared models and services
+│   ├── MCP.Core/                        # Shared models and services
 │   │   ├── Models/
 │   │   │   ├── RefactoringJobRequest.cs
 │   │   │   └── RefactoringJobStatus.cs
@@ -82,23 +85,45 @@ vbdotnet-refactor-mcp/
 │   │       ├── GitService.cs
 │   │       ├── CompilationService.cs
 │   │       └── CiCdService.cs
-│   ├── MCP.ApiGateway/              # REST API service
+│   ├── MCP.ApiGateway/                  # REST API service
 │   │   ├── Controllers/RefactoringJobsController.cs
 │   │   └── Program.cs
-│   ├── MCP.RefactoringWorker/       # Roslyn transformation worker
+│   ├── MCP.RefactoringWorker/           # Roslyn transformation worker
 │   │   ├── Services/RefactoringService.cs
 │   │   ├── PluginLoader.cs
 │   │   ├── PluginLoadContext.cs
 │   │   └── Program.cs
-│   ├── MCP.ValidationWorker/        # Git + Compilation + CI/CD worker
-│   └── MCP.Plugins.RenameSymbol/    # Example refactoring plugin
-│       └── RenameSymbolProvider.cs
+│   ├── MCP.ValidationWorker/            # Git + Compilation + CI/CD worker
+│   ├── MCP.Plugins.RenameSymbol/        # Rename refactoring plugin (Roslyn Renamer API)
+│   │   └── RenameSymbolProvider.cs
+│   └── MCP.Plugins.ExtractMethod/       # Extract method refactoring plugin
+│       └── ExtractMethodProvider.cs
 ├── tests/
-│   └── MCP.Tests/
+│   ├── MCP.Tests/                       # Comprehensive test suite (153 tests)
+│   │   ├── Integration/
+│   │   │   ├── EndToEndWorkflowTests.cs          # 10 workflow tests
+│   │   │   ├── RealVBNetRefactoringTests.cs      # 10 VB.NET fixture tests
+│   │   │   └── RealRefactoringExecutionTests.cs  # 7 E2E refactoring tests
+│   │   ├── CompilationServiceTests.cs
+│   │   ├── CiCdServiceTests.cs
+│   │   ├── GitServiceTests.cs
+│   │   ├── RefactoringServiceTests.cs
+│   │   ├── PluginLoaderTests.cs
+│   │   ├── RenameSymbolProviderTests.cs
+│   │   └── ExtractMethodProviderTests.cs
+│   └── fixtures/                        # Real VB.NET code for testing
+│       ├── SampleVBProject.sln
+│       └── SampleVBProject/
+│           ├── Customer.vb              # Sample business class
+│           ├── OrderProcessor.vb        # Complex business logic
+│           └── StringHelpers.vb         # VB.NET module
 ├── docs/
-│   └── architecture-blueprint.md    # Full architectural specification
+│   ├── ARCHITECTURE.md                  # Full architectural specification
+│   ├── PLUGIN-DEVELOPMENT-GUIDE.md      # Plugin creation guide
+│   ├── GITHUB-ACTIONS-GUIDE.md          # CI/CD workflow documentation
+│   └── TEST-COVERAGE-ANALYSIS.md        # Test coverage report
 ├── docker-compose.yml
-└── MCP.sln
+└── MCP.sln                              # 8 projects
 ```
 
 ---
@@ -250,55 +275,104 @@ Every refactoring job undergoes a three-stage validation pipeline to ensure **se
 
 ## Creating Custom Refactoring Plugins
 
-### Step 1: Create a New Class Library
+MCP provides a powerful plugin architecture for creating custom refactoring tools. The platform includes **two production plugins** demonstrating different approaches:
+
+1. **RenameSymbol** - Uses Roslyn's built-in Renamer API for semantic-preserving symbol renaming
+2. **ExtractMethod** - Custom code generation with data flow analysis
+
+### Quick Start
 
 ```bash
-dotnet new classlib -n MCP.Plugins.ExtractMethod
-dotnet add reference ../../MCP.Contracts/MCP.Contracts.csproj
-dotnet add package Microsoft.CodeAnalysis.VisualBasic.Workspaces
+# Create a new plugin project
+dotnet new classlib -n MCP.Plugins.YourPluginName
+cd MCP.Plugins.YourPluginName
+
+# Add required dependencies
+dotnet add reference ../MCP.Contracts/MCP.Contracts.csproj
+dotnet add package Microsoft.CodeAnalysis.VisualBasic.Workspaces --version 4.8.0
+
+# Implement the IRefactoringProvider interface
+# See docs/PLUGIN-DEVELOPMENT-GUIDE.md for detailed instructions
 ```
 
-### Step 2: Implement `IRefactoringProvider`
+### Example Plugin Structure
 
 ```csharp
 using MCP.Contracts;
 using Microsoft.CodeAnalysis;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-public class ExtractMethodProvider : IRefactoringProvider
+namespace MCP.Plugins.YourPluginName;
+
+public class YourPluginNameProvider : IRefactoringProvider
 {
-    public string Name => "ExtractMethod";
-    public string Description => "Extracts selected code into a new method";
+    public string Name => "YourPluginName";
+
+    public string Description => "Brief description of what this plugin does";
 
     public ValidationResult ValidateParameters(JsonElement parameters)
     {
-        // Validate required parameters
-        if (!parameters.TryGetProperty("targetFile", out _))
-            return ValidationResult.Failure("Missing 'targetFile' parameter");
+        // Validate required parameters before execution
+        var errors = new List<string>();
 
-        return ValidationResult.Success();
+        if (!parameters.TryGetProperty("targetFile", out var file) ||
+            string.IsNullOrWhiteSpace(file.GetString()))
+        {
+            errors.Add("'targetFile' is required");
+        }
+
+        return errors.Count == 0
+            ? ValidationResult.Success()
+            : ValidationResult.Failure(string.Join("; ", errors));
     }
 
     public async Task<RefactoringResult> ExecuteAsync(RefactoringContext context)
     {
-        // 1. Load document and get semantic model
-        // 2. Find the target syntax node
-        // 3. Use SpeculativeSemanticModel for pre-flight validation
-        // 4. Transform the syntax tree
-        // 5. Return the new solution
+        try
+        {
+            // 1. Extract parameters from context.Parameters
+            // 2. Report progress via context.Progress.Report("message")
+            // 3. Load document and get semantic model
+            // 4. Perform refactoring using Roslyn APIs
+            // 5. Return updated solution
 
-        return RefactoringResult.Success(transformedSolution);
+            context.Progress.Report("Refactoring completed successfully");
+            return RefactoringResult.Success(
+                updatedSolution,
+                "Success message");
+        }
+        catch (Exception ex)
+        {
+            return RefactoringResult.Failure(
+                context.Solution,
+                $"Refactoring failed: {ex.Message}");
+        }
     }
 }
 ```
 
-### Step 3: Deploy the Plugin
+### Deployment
 
 ```bash
-dotnet build MCP.Plugins.ExtractMethod
-cp bin/Debug/net8.0/*.dll ../MCP.RefactoringWorker/plugins/
+# Build your plugin
+dotnet build
+
+# Copy to the plugins directory
+cp bin/Debug/net8.0/*.dll ../../MCP.RefactoringWorker/plugins/
+
+# Restart the RefactoringWorker to load the new plugin
 ```
 
-The RefactoringWorker will automatically discover and load the new plugin at startup.
+### Complete Documentation
+
+See **[docs/PLUGIN-DEVELOPMENT-GUIDE.md](docs/PLUGIN-DEVELOPMENT-GUIDE.md)** for:
+- Detailed interface documentation
+- Parameter validation patterns
+- Using Roslyn APIs effectively
+- Testing strategies
+- Real-world examples from RenameSymbol and ExtractMethod plugins
+- Best practices and common pitfalls
 
 ---
 
@@ -411,22 +485,113 @@ All services use structured logging with `Microsoft.Extensions.Logging`. Configu
 
 ---
 
+## Testing
+
+MCP includes a comprehensive test suite ensuring production readiness and reliability.
+
+### Test Statistics
+
+- **Total Tests**: 153 tests
+- **Test Coverage**: ~75% (up from initial 25%)
+- **Test Types**: Unit, Integration, End-to-End
+
+### Test Organization
+
+```
+tests/MCP.Tests/
+├── Integration/
+│   ├── EndToEndWorkflowTests.cs           # 10 tests - Job lifecycle workflows
+│   ├── RealVBNetRefactoringTests.cs       # 10 tests - VB.NET fixture validation
+│   └── RealRefactoringExecutionTests.cs   # 7 tests - Real refactoring scenarios
+├── CompilationServiceTests.cs             # 11 tests - MSBuild integration
+├── CiCdServiceTests.cs                    # 13 tests - CI/CD integration
+├── GitServiceTests.cs                     # 14 tests - Git operations
+├── RefactoringServiceTests.cs             # 12 tests - Core refactoring engine
+├── RefactoringJobsControllerTests.cs      # 14 tests - REST API endpoints
+├── PluginLoaderTests.cs                   # 10 tests - Plugin discovery/loading
+├── RenameSymbolProviderTests.cs           # 10 tests - RenameSymbol plugin
+├── ExtractMethodProviderTests.cs          # 25 tests - ExtractMethod plugin
+└── ... (other test files)
+```
+
+### Real VB.NET Test Fixture
+
+The platform includes a complete VB.NET solution for realistic testing:
+
+```
+tests/fixtures/SampleVBProject/
+├── Customer.vb           # Business class with properties and methods
+├── OrderProcessor.vb     # Complex business logic
+└── StringHelpers.vb      # VB.NET module with utility functions
+```
+
+These fixtures enable:
+- Real MSBuildWorkspace loading tests
+- Actual Roslyn refactoring execution
+- Compilation verification after refactoring
+- Symbol resolution and semantic model testing
+
+### Safety Guarantee Test Coverage
+
+All three legs of the safety guarantee are thoroughly tested:
+
+✅ **Leg 1 (Roslyn Pre-flight)**: Tested via RenameSymbolProviderTests, RefactoringServiceTests
+✅ **Leg 2 (MSBuild Compilation)**: CompilationServiceTests (11 comprehensive tests)
+✅ **Leg 3 (CI/CD Testing)**: CiCdServiceTests (13 tests for Azure DevOps & Jenkins)
+
+### Running Tests
+
+```bash
+# Run all tests
+dotnet test
+
+# Run specific category
+dotnet test --filter "Category=Integration"
+
+# Run E2E tests only
+dotnet test --filter "Category=E2E"
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+```
+
+### Test-Driven Development
+
+When creating new plugins:
+1. Write validation tests first (parameter checking)
+2. Add integration tests with the VB.NET fixture
+3. Test error scenarios (conflicts, compilation failures)
+4. Verify compilation succeeds after refactoring
+
+See existing plugin tests (RenameSymbolProviderTests, ExtractMethodProviderTests) as examples.
+
+---
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-new-tool`)
-3. Implement your refactoring plugin following the plugin guide
-4. Add unit tests
-5. Submit a pull request
+3. Implement your refactoring plugin following the [Plugin Development Guide](docs/PLUGIN-DEVELOPMENT-GUIDE.md)
+4. Add comprehensive unit and integration tests (target 75%+ coverage)
+5. Ensure all tests pass: `dotnet test`
+6. Update documentation if adding new features
+7. Submit a pull request
 
 ---
 
 ## References
 
-- [Architectural Blueprint](docs/architecture-blueprint.md) - Full technical specification
-- [Roslyn Documentation](https://github.com/dotnet/roslyn/wiki)
-- [Hangfire Documentation](https://docs.hangfire.io)
-- [Martin Fowler's Refactoring](https://martinfowler.com/books/refactoring.html)
+### Project Documentation
+- [Architecture Documentation](docs/ARCHITECTURE.md) - Full technical specification
+- [Plugin Development Guide](docs/PLUGIN-DEVELOPMENT-GUIDE.md) - Complete guide for creating refactoring plugins
+- [GitHub Actions Guide](docs/GITHUB-ACTIONS-GUIDE.md) - CI/CD workflow documentation
+- [Test Coverage Analysis](docs/TEST-COVERAGE-ANALYSIS.md) - Detailed coverage report
+
+### External Resources
+- [Roslyn Documentation](https://github.com/dotnet/roslyn/wiki) - .NET Compiler Platform
+- [Hangfire Documentation](https://docs.hangfire.io) - Background job processing
+- [Martin Fowler's Refactoring](https://martinfowler.com/books/refactoring.html) - Refactoring principles
+- [MSBuild API Documentation](https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild-api) - Programmatic compilation
 
 ---
 
