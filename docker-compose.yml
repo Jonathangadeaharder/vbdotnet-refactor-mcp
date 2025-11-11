@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # SQL Server for Hangfire persistent storage
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mcp-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong!Passw0rd" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mcp-network
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/MCP.ApiGateway/Dockerfile
+    container_name: mcp-api-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__HangfireConnection=Server=sqlserver;Database=MCPHangfire;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+    ports:
+      - "5000:80"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  # Refactoring Worker Service
+  refactoring-worker:
+    build:
+      context: .
+      dockerfile: src/MCP.RefactoringWorker/Dockerfile
+    container_name: mcp-refactoring-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__HangfireConnection=Server=sqlserver;Database=MCPHangfire;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+      - Hangfire__WorkerCount=4
+      - PluginDirectory=/app/plugins
+    volumes:
+      # Mount a directory for VB.NET solutions to refactor
+      - ./workspaces:/workspaces:rw
+      # Mount plugin directory
+      - ./plugins:/app/plugins:ro
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  # Validation Worker Service (Optional - can be part of RefactoringWorker)
+  validation-worker:
+    build:
+      context: .
+      dockerfile: src/MCP.ValidationWorker/Dockerfile
+    container_name: mcp-validation-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__HangfireConnection=Server=sqlserver;Database=MCPHangfire;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+    volumes:
+      - ./workspaces:/workspaces:rw
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:
+
+networks:
+  mcp-network:
+    driver: bridge
