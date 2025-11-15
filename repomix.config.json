@@ -1,0 +1,49 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "markdown",
+    "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
+    "instructionFilePath": null,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 5,
+    "showLineNumbers": true
+  },
+  "include": [
+    "**/*.cs",
+    "**/*.csproj",
+    "**/*.sln",
+    "**/*.md",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.json",
+    "**/*.xml",
+    "**/*.config",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".dockerignore",
+    ".gitignore"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/bin/**",
+      "**/obj/**",
+      "**/node_modules/**",
+      "**/.vs/**",
+      "**/.vscode/**",
+      "**/packages/**",
+      "**/*.dll",
+      "**/*.exe",
+      "**/*.pdb",
+      "**/*.user",
+      "**/.git/**",
+      "**/test-execution.log",
+      "**/repomix-output/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
