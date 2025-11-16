@@ -47,6 +47,9 @@ The workflow uses the `repomix.config.json` file in the root directory to custom
     "filePath": "repomix-output/codebase-combined.txt",
     "style": "plain",
     "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 5,
     "showLineNumbers": true
   },
   "include": [

@@ -69,7 +69,7 @@ jobs:
           compression-level: 9
 
       - name: Generate summary
-        if: always()
+        if: success()
         run: |
           echo "## 📦 Repomix Codebase Artifact" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
