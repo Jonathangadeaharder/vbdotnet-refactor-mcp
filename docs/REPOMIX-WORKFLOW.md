@@ -37,12 +37,15 @@ The workflow runs automatically on:
 
 ### Configuration
 
-The workflow uses the `repomix.config.json` file in the root directory to customize the output:
+The workflow uses the `repomix.config.json` file in the root directory to customize the output.
+
+**Note:** The example below shows the key settings from the actual configuration file. See `repomix.config.json` in the repository root for the complete configuration.
 
 ```json
 {
   "output": {
-    "style": "markdown",
+    "filePath": "repomix-output/codebase-combined.txt",
+    "style": "plain",
     "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
     "showLineNumbers": true
   },
@@ -55,7 +58,10 @@ The workflow uses the `repomix.config.json` file in the root directory to custom
     "**/*.yaml",
     "**/*.json",
     "**/*.xml",
-    "**/*.config"
+    "**/*.config",
+    "Dockerfile",
+    ".dockerignore",
+    ".gitignore"
   ],
   "ignore": {
     "useGitignore": true,
@@ -63,17 +69,32 @@ The workflow uses the `repomix.config.json` file in the root directory to custom
     "customPatterns": [
       "**/bin/**",
       "**/obj/**",
+      "**/node_modules/**",
       "**/.vs/**",
-      "**/packages/**"
+      "**/.vscode/**",
+      "**/packages/**",
+      "**/*.dll",
+      "**/*.exe",
+      "**/*.pdb",
+      "**/*.user",
+      "**/.git/**",
+      "**/test-execution.log",
+      "**/repomix-output/**"
     ]
+  },
+  "security": {
+    "enableSecurityCheck": true
   }
 }
 ```
+
+**Security Note:** The configuration intentionally excludes `docker-compose.yml` to prevent accidentally including configuration files that may contain credentials or sensitive settings.
 
 ### Artifact Details
 
 - **Artifact name**: `repomix-codebase-{commit-sha}`
 - **File name**: `codebase-combined.txt`
+- **Output path**: `repomix-output/codebase-combined.txt`
 - **Retention**: 30 days
 - **Compression**: Level 9 (maximum compression)
 

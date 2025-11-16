@@ -1,6 +1,6 @@
 {
   "output": {
-    "filePath": "repomix-output.txt",
+    "filePath": "repomix-output/codebase-combined.txt",
     "style": "plain",
     "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
     "instructionFilePath": null,
@@ -20,7 +20,6 @@
     "**/*.xml",
     "**/*.config",
     "Dockerfile",
-    "docker-compose.yml",
     ".dockerignore",
     ".gitignore"
   ],
