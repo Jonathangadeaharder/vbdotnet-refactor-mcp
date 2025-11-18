@@ -11,6 +11,28 @@ permissions:
   contents: write
 
 jobs:
+  structurelint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install structurelint
+        run: |
+          git clone https://github.com/Jonathangadeaharder/structurelint.git /tmp/structurelint
+          cd /tmp/structurelint
+          go build -o /usr/local/bin/structurelint ./cmd/structurelint
+
+      - name: Run structurelint
+        run: |
+          structurelint .
+          echo "✅ Project structure validation passed"
+
   test-and-amend:
     runs-on: ubuntu-latest
 
