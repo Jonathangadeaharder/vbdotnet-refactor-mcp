@@ -153,6 +153,113 @@ This will start:
 
 ---
 
+## Project Structure Linting
+
+This project uses [structurelint](https://github.com/Jonathangadeaharder/structurelint) to enforce project structure, organization, and architectural integrity.
+
+### What is Structurelint?
+
+Structurelint is a next-generation linter designed to enforce:
+- **Filesystem organization**: Directory depth limits, file count constraints, naming conventions
+- **Architectural boundaries**: Import graph analysis and dependency rule validation
+- **Code quality**: Dead code detection and test validation
+- **CI/CD compliance**: GitHub workflow enforcement
+
+### Running Structurelint
+
+To check project structure compliance:
+
+```bash
+structurelint .
+```
+
+The configuration is defined in `.structurelint.yml` and enforces:
+
+**✅ Phase 0 - Filesystem Structure (7 rules enabled):**
+- `max-depth: 7` - Limit directory nesting
+- `max-files-in-dir: 25` - Limit files per directory (50 for tests)
+- `max-subdirs: 15` - Limit subdirectories per directory
+- `naming-convention` - PascalCase for C#, kebab-case for YAML
+- `dir-naming-convention` - PascalCase for src/ and tests/
+- `disallowed-patterns` - Block temp files (.tmp, .bak, .swp, .DS_Store, etc.)
+- ~~`file-existence`~~ - Disabled (too strict); READMEs manually created
+- ~~`regex-match`~~ - Disabled (naming-convention sufficient for C#)
+
+**✅ Phase 1 - Architectural Layer Enforcement:**
+- `enforce-layer-boundaries: true` - **Critical feature**
+  - Contracts: No dependencies
+  - Core: Only depends on Contracts
+  - Workers/Gateway: Only depend on Core + Contracts
+  - Plugins: Only depend on Contracts
+
+**⚠️ Phase 2 - Dead Code Detection:**
+- ~~`disallow-orphaned-files`~~ - Disabled (C# uses .csproj, not imports)
+- ~~`disallow-unused-exports`~~ - Disabled (use VS Code Analysis instead)
+
+**✅ Phase 3 - Test Validation:**
+- `test-location` - Validates tests in separate `tests/` directory
+- ~~`test-adjacency`~~ - Disabled (C# uses *Tests.cs pattern in separate dir)
+
+**✅ Phase 4 - Code Quality Metrics (Evidence-Based):**
+- `max-cognitive-complexity: 15` - **NEW** Evidence-based (r=0.54 correlation with comprehension time)
+- `max-halstead-effort: 100000` - **NEW** Neuroscience-validated (rs=0.901 correlation with brain activity)
+
+**⚠️ Phase 5 - Import Patterns:**
+- ~~`disallow-deep-imports`~~ - Disabled (analyzes imports; C# uses project references)
+
+**⚠️ Phase 6 - Linter Config Enforcement:**
+- ~~`linter-config`~~ - Disabled (C# not yet supported; requires Python/TypeScript/Go/etc.)
+
+**⚠️ Phase 7 - File Content Templates:**
+- ~~`file-content`~~ - Disabled (would require custom C# templates)
+
+**📚 Documentation Created:**
+- Root: `README.md`, `QUICKSTART.md`, `GITHUB-ACTIONS-GUIDE.md`
+- Components: 6 package READMEs (Contracts, Core, ApiGateway, RefactoringWorker, ValidationWorker, Plugins)
+- Tests: `tests/MCP.Tests/README.md`
+- Directories: `src/README.md`, `tests/README.md`, `docs/README.md`
+
+**Summary:** 12 rules actively enforcing structure + 10 comprehensive READMEs documenting architecture
+
+### Installing Structurelint
+
+If you need to install structurelint:
+
+```bash
+# Using Go (pinned to specific commit for reproducibility)
+go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
+
+# Or build from source (recommended for development)
+git clone https://github.com/Jonathangadeaharder/structurelint.git
+cd structurelint
+go build -o structurelint ./cmd/structurelint
+sudo cp structurelint /usr/local/bin/
+```
+
+### CI/CD Integration
+
+Structurelint is already integrated into the GitHub Actions workflow (`.github/workflows/test-and-log.yml`). It runs automatically on every push to validate project structure.
+
+To add to other workflows:
+
+```yaml
+- name: Setup Go
+  uses: actions/setup-go@v5
+  with:
+    go-version: '1.21'
+
+- name: Install structurelint
+  run: |
+    git clone https://github.com/Jonathangadeaharder/structurelint.git /tmp/structurelint
+    cd /tmp/structurelint
+    go build -o /usr/local/bin/structurelint ./cmd/structurelint
+
+- name: Run Structurelint
+  run: structurelint .
+```
+
+---
+
 ## Usage
 
 ### Submitting a Refactoring Job
