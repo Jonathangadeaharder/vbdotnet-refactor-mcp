@@ -227,10 +227,14 @@ rules:
   # ====================================================================
 
   # Prevent deeply nested import paths
-  # Helps maintain flat, understandable dependency structures
-  disallow-deep-imports:
-    max-depth: 3
-    message: "Import paths should not be deeply nested (max 3 levels)"
+  # Note: Like dead code detection, this rule analyzes import statements.
+  # C# uses project references (.csproj) and namespace imports (using statements),
+  # which structurelint doesn't currently parse.
+  #
+  # Disabled for C# projects:
+  # disallow-deep-imports:
+  #   max-depth: 3
+  #   message: "Import paths should not be deeply nested (max 3 levels)"
 
   # ====================================================================
   # Phase 6: Linter Configuration Enforcement
@@ -276,35 +280,32 @@ overrides:
       max-cognitive-complexity: 30       # Test methods can be more complex
       max-halstead-effort: 200000       # Tests can have higher effort
 
-  # Documentation - can have more files
+  # Documentation - can have more files, no code quality metrics
   - files:
       - 'docs/**'
       - '**/*.md'
     rules:
       max-files-in-dir: 50
-      disallow-deep-imports: 0
-      max-cognitive-complexity: 0
-      max-halstead-effort: 0
+      # Documentation files don't need code quality checks
+      # (removing rules disables them for this pattern)
 
-  # Configuration directories - can have more files
+  # Configuration directories - can have more files, flexible naming
   - files:
       - '.github/**'
       - '**/.vscode/**'
     rules:
       max-files-in-dir: 50
-      naming-convention: 0              # Flexible naming for configs
+      # Configuration files can use any naming convention
 
-  # Generated code - relax all quality metrics
+  # Generated code - exempt from all quality metrics
   - files:
       - '**/*Generated.cs'
       - '**/*.Designer.cs'
       - '**/obj/**'
       - '**/bin/**'
     rules:
-      max-cognitive-complexity: 0
-      max-halstead-effort: 0
-      naming-convention: 0
-      disallow-deep-imports: 0
+      # Generated code is excluded from quality checks
+      # (removing rules disables them for this pattern)
 
 # ====================================================================
 # Summary of Enabled Features
@@ -329,8 +330,8 @@ overrides:
 #    - max-cognitive-complexity (evidence-based)
 #    - max-halstead-effort (neuroscience-validated)
 #
-# ✅ Phase 5 - Import Patterns:
-#    - disallow-deep-imports
+# ⚠️  Phase 5 - Import Patterns:
+#    - Disabled (C# uses project references, not imports)
 #
 # ⚠️  Phase 6 - Linter Config:
 #    - Disabled (C# not yet supported by structurelint)

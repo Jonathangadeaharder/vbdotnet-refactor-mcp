@@ -204,8 +204,8 @@ The configuration is defined in `.structurelint.yml` and enforces:
 - `max-cognitive-complexity: 15` - **NEW** Evidence-based (r=0.54 correlation with comprehension time)
 - `max-halstead-effort: 100000` - **NEW** Neuroscience-validated (rs=0.901 correlation with brain activity)
 
-**✅ Phase 5 - Import Patterns:**
-- `disallow-deep-imports: 3` - Prevent deeply nested import paths
+**⚠️ Phase 5 - Import Patterns:**
+- ~~`disallow-deep-imports`~~ - Disabled (analyzes imports; C# uses project references)
 
 **⚠️ Phase 6 - Linter Config Enforcement:**
 - ~~`linter-config`~~ - Disabled (C# not yet supported; requires Python/TypeScript/Go/etc.)
@@ -219,31 +219,43 @@ The configuration is defined in `.structurelint.yml` and enforces:
 - Tests: `tests/MCP.Tests/README.md`
 - Directories: `src/README.md`, `tests/README.md`, `docs/README.md`
 
-**Summary:** 13 rules actively enforcing structure + 10 comprehensive READMEs documenting architecture
+**Summary:** 12 rules actively enforcing structure + 10 comprehensive READMEs documenting architecture
 
 ### Installing Structurelint
 
 If you need to install structurelint:
 
 ```bash
-# Using Go
-go install github.com/structurelint/structurelint/cmd/structurelint@latest
+# Using Go (pinned to specific commit for reproducibility)
+go install github.com/Jonathangadeaharder/structurelint/cmd/structurelint@latest
 
-# Or build from source
+# Or build from source (recommended for development)
 git clone https://github.com/Jonathangadeaharder/structurelint.git
 cd structurelint
 go build -o structurelint ./cmd/structurelint
+sudo cp structurelint /usr/local/bin/
 ```
 
 ### CI/CD Integration
 
-Structurelint can be integrated into your CI/CD pipeline to automatically validate project structure on every pull request. Add this to your GitHub Actions workflow:
+Structurelint is already integrated into the GitHub Actions workflow (`.github/workflows/test-and-log.yml`). It runs automatically on every push to validate project structure.
+
+To add to other workflows:
 
 ```yaml
-- name: Run Structurelint
+- name: Setup Go
+  uses: actions/setup-go@v5
+  with:
+    go-version: '1.21'
+
+- name: Install structurelint
   run: |
-    go install github.com/structurelint/structurelint/cmd/structurelint@latest
-    structurelint .
+    git clone https://github.com/Jonathangadeaharder/structurelint.git /tmp/structurelint
+    cd /tmp/structurelint
+    go build -o /usr/local/bin/structurelint ./cmd/structurelint
+
+- name: Run Structurelint
+  run: structurelint .
 ```
 
 ---
