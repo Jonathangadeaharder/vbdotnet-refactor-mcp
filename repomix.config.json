@@ -1,0 +1,47 @@
+{
+  "output": {
+    "filePath": "repomix-output/codebase-combined.txt",
+    "style": "plain",
+    "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 5,
+    "showLineNumbers": true
+  },
+  "include": [
+    "**/*.cs",
+    "**/*.csproj",
+    "**/*.sln",
+    "**/*.md",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.json",
+    "**/*.xml",
+    "**/*.config",
+    "Dockerfile",
+    ".dockerignore",
+    ".gitignore"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/bin/**",
+      "**/obj/**",
+      "**/node_modules/**",
+      "**/.vs/**",
+      "**/.vscode/**",
+      "**/packages/**",
+      "**/*.dll",
+      "**/*.exe",
+      "**/*.pdb",
+      "**/*.user",
+      "**/.git/**",
+      "**/test-execution.log",
+      "**/repomix-output/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

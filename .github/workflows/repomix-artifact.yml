@@ -1,0 +1,86 @@
+name: Repomix Codebase Artifact
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+      - 'main'
+      - 'develop'
+  pull_request:
+    branches:
+      - 'main'
+      - 'develop'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-repomix-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install repomix
+        run: npm install -g repomix
+
+      - name: Generate repomix output
+        id: repomix
+        run: |
+          # Create output directory
+          mkdir -p repomix-output
+
+          # Run repomix to generate the combined codebase
+          # Using config file if it exists, otherwise use default settings
+          if [ -f "repomix.config.json" ]; then
+            echo "📝 Using repomix.config.json configuration"
+            repomix --config repomix.config.json --output repomix-output/codebase-combined.txt
+          else
+            echo "📝 Using default repomix configuration"
+            repomix --output repomix-output/codebase-combined.txt
+          fi
+
+          # Get file size and line count for summary
+          FILE_SIZE=$(du -h repomix-output/codebase-combined.txt | cut -f1)
+          LINE_COUNT=$(wc -l < repomix-output/codebase-combined.txt)
+
+          echo "file_size=$FILE_SIZE" >> $GITHUB_OUTPUT
+          echo "line_count=$LINE_COUNT" >> $GITHUB_OUTPUT
+
+          echo "✅ Repomix output generated successfully"
+          echo "📊 File size: $FILE_SIZE"
+          echo "📊 Line count: $LINE_COUNT"
+
+      - name: Upload repomix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomix-codebase-${{ github.sha }}
+          path: repomix-output/codebase-combined.txt
+          retention-days: 30
+          compression-level: 9
+
+      - name: Generate summary
+        if: success()
+        run: |
+          echo "## 📦 Repomix Codebase Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**File Size:** ${{ steps.repomix.outputs.file_size }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Line Count:** ${{ steps.repomix.outputs.line_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The combined codebase has been generated and uploaded as an artifact." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Download Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "You can download the artifact from the workflow run summary page:" >> $GITHUB_STEP_SUMMARY
+          echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
