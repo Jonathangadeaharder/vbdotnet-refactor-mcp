@@ -174,11 +174,25 @@ structurelint .
 ```
 
 The configuration is defined in `.structurelint.yml` and enforces:
-- **Naming Conventions**: PascalCase for C# files, proper directory naming
-- **Architectural Layers**: Clear dependency boundaries (e.g., Plugins only depend on Contracts)
-- **File Organization**: Services in `Services/`, Models in `Models/`, Controllers in `Controllers/`
-- **Test Validation**: Proper test file naming and location
-- **GitHub Workflows**: Required CI/CD pipeline presence
+
+**Enabled Rules:**
+- **Directory Structure**: Max depth (7 levels), max files per directory (25), max subdirectories (15)
+- **Naming Conventions**: PascalCase for C# files, kebab-case for YAML, proper directory naming
+- **Disallowed Patterns**: No .tmp, .bak, .swp, .DS_Store, or other temporary files
+- **Architectural Layer Boundaries**: Strict dependency enforcement (Plugins → Contracts only, Workers → Core+Contracts)
+- **Import Depth Limits**: Prevent deeply nested import paths (max 3 levels)
+- **Cognitive Complexity**: Max 15 for production code, 30 for tests
+- **Test Location Validation**: Tests in separate `tests/` directory following C# conventions
+
+**Disabled for C# Projects:**
+- **Dead Code Detection** (orphaned files, unused exports): Requires import-based analysis; C# uses project references
+- **File Existence** (README requirements): Too strict for subdirectories; manually created for major components
+
+**Documentation Created:**
+- Root: `README.md`, `QUICKSTART.md`, `GITHUB-ACTIONS-GUIDE.md`
+- Components: `src/*/README.md` for each major package
+- Tests: `tests/MCP.Tests/README.md`
+- Docs: `docs/README.md`
 
 ### Installing Structurelint
 

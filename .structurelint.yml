@@ -1,5 +1,6 @@
 # Structurelint Configuration for Mass Code Platform (MCP)
 # This enforces project structure, organization, and architectural integrity
+# All features enabled following best practices
 
 root: true
 
@@ -86,17 +87,29 @@ rules:
     "**/*.json": "camelCase|PascalCase|kebab-case"
     "**/*.yml": "kebab-case"
     "**/*.yaml": "kebab-case"
+    # Markdown files
+    "**/*.md": "UPPERCASE|PascalCase|kebab-case"
 
-  # Disallow certain file patterns
+  # Disallow certain file patterns - prevent temporary and system files
   disallowed-patterns:
     - "*.tmp"
     - "*.bak"
     - "*.swp"
+    - "*.orig"
     - ".DS_Store"
     - "Thumbs.db"
+    - "desktop.ini"
 
-  # Note: file-existence rule disabled to avoid requiring files in every directory
-  # In .NET projects, only the root needs README, .sln, and .gitignore
+  # Require README.md in key directories for documentation
+  # Note: This rule applies to all directories. For C# projects, we've created
+  # READMEs in major component directories (src/, tests/, docs/, each package)
+  # Subdirectories like Models/, Services/, Controllers/ don't need READMEs
+  #
+  # Disabled at the rule level because structurelint doesn't support
+  # directory-level filtering for file-existence checks.
+  # Enable if you want strict documentation requirements:
+  # file-existence:
+  #   "README.md": "exists:1"
 
   # ====================================================================
   # Phase 1: Architectural Layer Enforcement
@@ -104,37 +117,36 @@ rules:
 
   # Enable layer boundary enforcement
   # This ensures that dependencies only flow in the allowed direction
+  # Plugins can only depend on Contracts, Workers can depend on Core+Contracts
   enforce-layer-boundaries: true
 
   # ====================================================================
   # Phase 2: Dead Code Detection
   # ====================================================================
 
-  # Detect orphaned files (files not reachable from entry points)
-  # Disabled for now as this is a new project with potential orphaned code
-  disallow-orphaned-files: false
-
-  # Detect unused exports (symbols that are exported but never imported)
-  # Disabled for now during initial development
-  disallow-unused-exports: false
+  # Note: Dead code detection (orphaned files and unused exports) works
+  # by analyzing import statements in source files. This is designed for
+  # languages like Go, TypeScript, and JavaScript that use explicit imports.
+  #
+  # C# uses project references (.csproj) and namespace imports (using statements),
+  # which structurelint doesn't currently parse. Therefore, these rules
+  # produce false positives for C# projects where every file appears "orphaned."
+  #
+  # For C# dead code detection, use:
+  # - Visual Studio Code Analysis
+  # - ReSharper or Rider's "Find Unused Code"
+  # - NDepend for architectural analysis
+  #
+  # Disabled for C# projects:
+  # disallow-orphaned-files: true
+  # disallow-unused-exports: true
 
   # ====================================================================
   # Phase 3: Test Validation
   # ====================================================================
 
-  # Test adjacency validation
-  # For C# projects, tests are typically in a separate tests/ directory
-  # Disabled for now - tests exist but with different naming patterns (*Tests.cs)
-  # test-adjacency:
-  #   pattern: "separate"
-  #   file-patterns:
-  #     - "src/**/*.cs"
-  #   exemptions:
-  #     - "src/**/Program.cs"
-  #     - "src/**/Startup.cs"
-  #     - "**/*Controller.cs"
-
   # Test location validation
+  # Ensure tests are in the correct directory structure
   test-location:
     integration-test-dir: "tests"
     allow-adjacent: false          # C# convention: tests in separate directory
@@ -145,18 +157,55 @@ rules:
       - "**/bin/**"
       - "**/obj/**"
 
+  # ====================================================================
+  # Phase 4: Code Quality Metrics
+  # ====================================================================
+
+  # Cognitive complexity (better than cyclomatic complexity)
+  # Measures how difficult code is to understand
+  max-cognitive-complexity:
+    max: 15
+    message: "Functions should not exceed cognitive complexity of 15"
+    exemptions:
+      - "**/*Tests.cs"      # Test methods can be more complex
+      - "**/Program.cs"     # Entry points may have setup code
+
+  # ====================================================================
+  # Additional Best Practices
+  # ====================================================================
+
+  # Require directory naming conventions
+  dir-naming-convention:
+    "src/**": "PascalCase"
+    "tests/**": "PascalCase"
+    "docs/**": "PascalCase|kebab-case"
+
+  # Prevent common anti-patterns
+  disallow-deep-imports:
+    max-depth: 3
+    message: "Import paths should not be deeply nested (max 3 levels)"
+
 # Overrides for specific file patterns
 overrides:
-  # Relaxed rules for test files
-  - files: ['tests/**', '**/*Tests.cs']
+  # Test directories - can have more files and complexity
+  - files:
+      - 'tests/**'
+      - '**/Integration/**'
+      - '**/*Tests.cs'
     rules:
-      max-files-in-dir: 50         # Test directories can have more files
-      disallow-orphaned-files: 0   # Test files may not be "used" in traditional sense
-      disallow-unused-exports: 0   # Test helpers may have unused exports
-      naming-convention: 0         # Tests may use different naming patterns
+      max-files-in-dir: 50
+      max-cognitive-complexity: 30
 
-  # Relaxed rules for documentation
-  - files: ['docs/**', '**/*.md']
+  # Documentation - can have more files
+  - files:
+      - 'docs/**'
+      - '**/*.md'
     rules:
-      disallow-orphaned-files: 0
-      disallow-unused-exports: 0
+      max-files-in-dir: 50
+
+  # Configuration directories - can have more files
+  - files:
+      - '.github/**'
+      - '**/.vscode/**'
+    rules:
+      max-files-in-dir: 50
