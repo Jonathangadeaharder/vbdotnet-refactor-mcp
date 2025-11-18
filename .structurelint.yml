@@ -1,0 +1,185 @@
+# Structurelint Configuration for Mass Code Platform (MCP)
+# This enforces project structure, organization, and architectural integrity
+
+root: true
+
+# Global ignore patterns
+ignore:
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/node_modules/**"
+  - "**/.git/**"
+  - "**/packages/**"
+  - "**/.vs/**"
+
+# Phase 0: Filesystem Linting Rules
+rules:
+  # Limit directory depth to prevent over-nesting
+  max-depth:
+    max: 7
+    message: "Directory depth should not exceed 7 levels to maintain navigability"
+
+  # Limit files per directory to improve organization
+  max-files-in-dir:
+    max: 25
+    message: "Directories should contain no more than 25 files for better organization"
+    exclude:
+      - "tests/**"  # Test directories may have more files
+
+  # Enforce naming conventions
+  naming-convention:
+    # C# files should use PascalCase
+    "**/*.cs": "PascalCase"
+    # Project files should use PascalCase with dots
+    "**/*.csproj": "PascalCase"
+    # Configuration and documentation can use various cases
+    "**/*.json": "camelCase|PascalCase|kebab-case"
+    "**/*.yml": "kebab-case"
+    "**/*.yaml": "kebab-case"
+    "**/*.md": "UPPERCASE|PascalCase|kebab-case"
+
+  # Enforce directory naming
+  dir-naming-convention:
+    "src/**": "PascalCase"
+    "tests/**": "PascalCase"
+    "docs/**": "PascalCase|kebab-case"
+
+# Phase 1: Architectural Layer Enforcement
+# Define architectural boundaries and dependency rules
+architectural-layers:
+  # MCP.Contracts - Interface definitions (no dependencies)
+  - name: "Contracts"
+    pattern: "src/MCP.Contracts/**"
+    allowed-dependencies: []
+    description: "Plugin interface definitions should have no dependencies on other MCP components"
+
+  # MCP.Core - Shared models and services
+  - name: "Core"
+    pattern: "src/MCP.Core/**"
+    allowed-dependencies:
+      - "Contracts"
+    description: "Core shared functionality may only depend on Contracts"
+
+  # MCP.ApiGateway - REST API service
+  - name: "ApiGateway"
+    pattern: "src/MCP.ApiGateway/**"
+    allowed-dependencies:
+      - "Contracts"
+      - "Core"
+    description: "API Gateway may depend on Core and Contracts"
+
+  # MCP.RefactoringWorker - Roslyn transformation worker
+  - name: "RefactoringWorker"
+    pattern: "src/MCP.RefactoringWorker/**"
+    allowed-dependencies:
+      - "Contracts"
+      - "Core"
+    description: "Refactoring Worker may depend on Core and Contracts"
+
+  # MCP.ValidationWorker - Validation service
+  - name: "ValidationWorker"
+    pattern: "src/MCP.ValidationWorker/**"
+    allowed-dependencies:
+      - "Contracts"
+      - "Core"
+    description: "Validation Worker may depend on Core and Contracts"
+
+  # MCP.Plugins.* - Refactoring plugins
+  - name: "Plugins"
+    pattern: "src/MCP.Plugins.*/**"
+    allowed-dependencies:
+      - "Contracts"
+    description: "Plugins should only depend on Contracts interface"
+
+  # Tests can depend on anything
+  - name: "Tests"
+    pattern: "tests/**"
+    allowed-dependencies: ["*"]
+    description: "Tests may depend on any component"
+
+# Phase 2: Dead Code Detection
+dead-code-detection:
+  enabled: true
+  check-exports: true
+  check-unused-files: true
+  exclude:
+    - "Program.cs"  # Entry points
+    - "**/obj/**"
+    - "**/bin/**"
+
+# Phase 3: Test Validation
+test-validation:
+  enabled: true
+  patterns:
+    # C# test files should end with Tests.cs
+    - language: "csharp"
+      test-file-pattern: "**/*Tests.cs"
+      test-directory: "tests/"
+      require-test-adjacency: false  # Tests are in separate tests/ directory
+
+  coverage-requirements:
+    min-test-files: 5
+    message: "Project should maintain comprehensive test coverage"
+
+# Phase 4: File Content Templates
+file-templates:
+  # Ensure all projects have proper README
+  - path: "README.md"
+    required: true
+    message: "Root README.md is required for project documentation"
+
+  # Solution file should exist
+  - path: "*.sln"
+    required: true
+    message: "Solution file (.sln) is required for .NET projects"
+
+  # Git ignore should be present
+  - path: ".gitignore"
+    required: true
+    message: ".gitignore file is required"
+
+# Phase 8: GitHub Workflow Enforcement
+github-workflows:
+  enabled: true
+  required-workflows:
+    - name: "CI/CD Pipeline"
+      file-pattern: ".github/workflows/*.yml"
+      message: "GitHub Actions workflow is required for automated testing"
+
+  workflow-requirements:
+    # Ensure workflows have proper security
+    - check: "no-hardcoded-secrets"
+      message: "Workflows should not contain hardcoded secrets"
+
+    # Ensure workflows run tests
+    - check: "contains-test-step"
+      pattern: "(dotnet test|xunit|nunit)"
+      message: "Workflows should include automated test execution"
+
+# Additional Project-Specific Rules
+project-rules:
+  # Ensure Services are in Services subdirectory
+  - rule: "services-in-services-dir"
+    pattern: "src/**/Services/*.cs"
+    message: "Service classes should be in Services/ subdirectory"
+
+  # Ensure Models are in Models subdirectory
+  - rule: "models-in-models-dir"
+    pattern: "src/**/Models/*.cs"
+    message: "Model classes should be in Models/ subdirectory"
+
+  # Ensure Controllers are in Controllers subdirectory
+  - rule: "controllers-in-controllers-dir"
+    pattern: "src/**/Controllers/*Controller.cs"
+    message: "Controller classes should be in Controllers/ subdirectory"
+
+# Severity levels
+severity:
+  max-depth: "warning"
+  max-files-in-dir: "warning"
+  naming-convention: "error"
+  architectural-layers: "error"
+  dead-code-detection: "warning"
+  test-validation: "warning"
+  file-templates: "error"
+  github-workflows: "warning"

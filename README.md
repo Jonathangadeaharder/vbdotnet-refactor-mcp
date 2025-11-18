@@ -153,6 +153,60 @@ This will start:
 
 ---
 
+## Project Structure Linting
+
+This project uses [structurelint](https://github.com/Jonathangadeaharder/structurelint) to enforce project structure, organization, and architectural integrity.
+
+### What is Structurelint?
+
+Structurelint is a next-generation linter designed to enforce:
+- **Filesystem organization**: Directory depth limits, file count constraints, naming conventions
+- **Architectural boundaries**: Import graph analysis and dependency rule validation
+- **Code quality**: Dead code detection and test validation
+- **CI/CD compliance**: GitHub workflow enforcement
+
+### Running Structurelint
+
+To check project structure compliance:
+
+```bash
+structurelint .
+```
+
+The configuration is defined in `.structurelint.yml` and enforces:
+- **Naming Conventions**: PascalCase for C# files, proper directory naming
+- **Architectural Layers**: Clear dependency boundaries (e.g., Plugins only depend on Contracts)
+- **File Organization**: Services in `Services/`, Models in `Models/`, Controllers in `Controllers/`
+- **Test Validation**: Proper test file naming and location
+- **GitHub Workflows**: Required CI/CD pipeline presence
+
+### Installing Structurelint
+
+If you need to install structurelint:
+
+```bash
+# Using Go
+go install github.com/structurelint/structurelint/cmd/structurelint@latest
+
+# Or build from source
+git clone https://github.com/Jonathangadeaharder/structurelint.git
+cd structurelint
+go build -o structurelint ./cmd/structurelint
+```
+
+### CI/CD Integration
+
+Structurelint can be integrated into your CI/CD pipeline to automatically validate project structure on every pull request. Add this to your GitHub Actions workflow:
+
+```yaml
+- name: Run Structurelint
+  run: |
+    go install github.com/structurelint/structurelint/cmd/structurelint@latest
+    structurelint .
+```
+
+---
+
 ## Usage
 
 ### Submitting a Refactoring Job
