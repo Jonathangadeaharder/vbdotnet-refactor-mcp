@@ -3,7 +3,6 @@
     "filePath": "repomix-output/codebase-combined.txt",
     "style": "plain",
     "headerText": "VB.NET to .NET MCP Server - Complete Codebase",
-    "instructionFilePath": null,
     "removeComments": false,
     "removeEmptyLines": false,
     "topFilesLength": 5,
