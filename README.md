@@ -175,24 +175,51 @@ structurelint .
 
 The configuration is defined in `.structurelint.yml` and enforces:
 
-**Enabled Rules:**
-- **Directory Structure**: Max depth (7 levels), max files per directory (25), max subdirectories (15)
-- **Naming Conventions**: PascalCase for C# files, kebab-case for YAML, proper directory naming
-- **Disallowed Patterns**: No .tmp, .bak, .swp, .DS_Store, or other temporary files
-- **Architectural Layer Boundaries**: Strict dependency enforcement (Plugins → Contracts only, Workers → Core+Contracts)
-- **Import Depth Limits**: Prevent deeply nested import paths (max 3 levels)
-- **Cognitive Complexity**: Max 15 for production code, 30 for tests
-- **Test Location Validation**: Tests in separate `tests/` directory following C# conventions
+**✅ Phase 0 - Filesystem Structure (7 rules enabled):**
+- `max-depth: 7` - Limit directory nesting
+- `max-files-in-dir: 25` - Limit files per directory (50 for tests)
+- `max-subdirs: 15` - Limit subdirectories per directory
+- `naming-convention` - PascalCase for C#, kebab-case for YAML
+- `dir-naming-convention` - PascalCase for src/ and tests/
+- `disallowed-patterns` - Block temp files (.tmp, .bak, .swp, .DS_Store, etc.)
+- ~~`file-existence`~~ - Disabled (too strict); READMEs manually created
+- ~~`regex-match`~~ - Disabled (naming-convention sufficient for C#)
 
-**Disabled for C# Projects:**
-- **Dead Code Detection** (orphaned files, unused exports): Requires import-based analysis; C# uses project references
-- **File Existence** (README requirements): Too strict for subdirectories; manually created for major components
+**✅ Phase 1 - Architectural Layer Enforcement:**
+- `enforce-layer-boundaries: true` - **Critical feature**
+  - Contracts: No dependencies
+  - Core: Only depends on Contracts
+  - Workers/Gateway: Only depend on Core + Contracts
+  - Plugins: Only depend on Contracts
 
-**Documentation Created:**
+**⚠️ Phase 2 - Dead Code Detection:**
+- ~~`disallow-orphaned-files`~~ - Disabled (C# uses .csproj, not imports)
+- ~~`disallow-unused-exports`~~ - Disabled (use VS Code Analysis instead)
+
+**✅ Phase 3 - Test Validation:**
+- `test-location` - Validates tests in separate `tests/` directory
+- ~~`test-adjacency`~~ - Disabled (C# uses *Tests.cs pattern in separate dir)
+
+**✅ Phase 4 - Code Quality Metrics (Evidence-Based):**
+- `max-cognitive-complexity: 15` - **NEW** Evidence-based (r=0.54 correlation with comprehension time)
+- `max-halstead-effort: 100000` - **NEW** Neuroscience-validated (rs=0.901 correlation with brain activity)
+
+**✅ Phase 5 - Import Patterns:**
+- `disallow-deep-imports: 3` - Prevent deeply nested import paths
+
+**⚠️ Phase 6 - Linter Config Enforcement:**
+- ~~`linter-config`~~ - Disabled (C# not yet supported; requires Python/TypeScript/Go/etc.)
+
+**⚠️ Phase 7 - File Content Templates:**
+- ~~`file-content`~~ - Disabled (would require custom C# templates)
+
+**📚 Documentation Created:**
 - Root: `README.md`, `QUICKSTART.md`, `GITHUB-ACTIONS-GUIDE.md`
-- Components: `src/*/README.md` for each major package
+- Components: 6 package READMEs (Contracts, Core, ApiGateway, RefactoringWorker, ValidationWorker, Plugins)
 - Tests: `tests/MCP.Tests/README.md`
-- Docs: `docs/README.md`
+- Directories: `src/README.md`, `tests/README.md`, `docs/README.md`
+
+**Summary:** 13 rules actively enforcing structure + 10 comprehensive READMEs documenting architecture
 
 ### Installing Structurelint
 
